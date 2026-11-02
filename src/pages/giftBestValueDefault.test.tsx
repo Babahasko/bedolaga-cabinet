@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
+<<<<<<< HEAD
 import { cleanup, fireEvent, screen } from '@testing-library/react';
+=======
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+>>>>>>> upstream/main
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
 import { render } from '@testing-library/react';
@@ -140,8 +144,13 @@ function periodCard(label: string): HTMLElement {
   return card;
 }
 
+<<<<<<< HEAD
 const SELECTED_TARIFF = 'border-accent-500/50';
 const SELECTED_PERIOD = 'from-accent-500';
+=======
+// Выбор — по состоянию (aria-checked / aria-pressed), а не по классам
+// оформления: оформление выбора меняется, смысл — нет.
+>>>>>>> upstream/main
 
 describe('подарок: выбранные по умолчанию тариф и период', () => {
   it('выгодный тариф выбран сразу, а не первый по счёту', async () => {
@@ -152,8 +161,13 @@ describe('подарок: выбранные по умолчанию тариф 
     await renderGift();
     await screen.findByText('Годовой');
 
+<<<<<<< HEAD
     expect(tariffCard('Годовой').className).toContain(SELECTED_TARIFF);
     expect(tariffCard('Базовый').className).not.toContain(SELECTED_TARIFF);
+=======
+    await waitFor(() => expect(tariffCard('Годовой').getAttribute('aria-checked')).toBe('true'));
+    expect(tariffCard('Базовый').getAttribute('aria-checked')).toBe('false');
+>>>>>>> upstream/main
   });
 
   it('выгодный период выбран сразу, а не первый по счёту', async () => {
@@ -163,8 +177,13 @@ describe('подарок: выбранные по умолчанию тариф 
     await renderGift();
     await screen.findByText('1 месяц');
 
+<<<<<<< HEAD
     expect(periodCard('6 месяцев').className).toContain(SELECTED_PERIOD);
     expect(periodCard('1 месяц').className).not.toContain(SELECTED_PERIOD);
+=======
+    await waitFor(() => expect(periodCard('6 месяцев').getAttribute('aria-pressed')).toBe('true'));
+    expect(periodCard('1 месяц').getAttribute('aria-pressed')).toBe('false');
+>>>>>>> upstream/main
   });
 
   it('выгодный период подписан «Выгодно», остальные — нет', async () => {
@@ -207,12 +226,21 @@ describe('подарок: выбранные по умолчанию тариф 
     ]);
     await renderGift();
     await screen.findByText('Премиум');
+<<<<<<< HEAD
     expect(periodCard('1 месяц').className).toContain(SELECTED_PERIOD);
 
     fireEvent.click(tariffCard('Премиум'));
 
     expect(periodCard('6 месяцев').className).toContain(SELECTED_PERIOD);
     expect(periodCard('1 месяц').className).not.toContain(SELECTED_PERIOD);
+=======
+    expect(periodCard('1 месяц').getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(tariffCard('Премиум'));
+
+    expect(periodCard('6 месяцев').getAttribute('aria-pressed')).toBe('true');
+    expect(periodCard('1 месяц').getAttribute('aria-pressed')).toBe('false');
+>>>>>>> upstream/main
   });
 
   it('свой выбор периода не перебивается', async () => {
@@ -225,8 +253,13 @@ describe('подарок: выбранные по умолчанию тариф 
 
     fireEvent.click(periodCard('1 месяц'));
 
+<<<<<<< HEAD
     expect(periodCard('1 месяц').className).toContain(SELECTED_PERIOD);
     expect(periodCard('6 месяцев').className).not.toContain(SELECTED_PERIOD);
+=======
+    expect(periodCard('1 месяц').getAttribute('aria-pressed')).toBe('true');
+    expect(periodCard('6 месяцев').getAttribute('aria-pressed')).toBe('false');
+>>>>>>> upstream/main
   });
 
   it('без отметок остаётся первый тариф и первый период', async () => {
@@ -237,7 +270,12 @@ describe('подарок: выбранные по умолчанию тариф 
     await renderGift();
     await screen.findByText('Базовый');
 
+<<<<<<< HEAD
     expect(tariffCard('Базовый').className).toContain(SELECTED_TARIFF);
     expect(periodCard('1 месяц').className).toContain(SELECTED_PERIOD);
+=======
+    expect(tariffCard('Базовый').getAttribute('aria-checked')).toBe('true');
+    expect(periodCard('1 месяц').getAttribute('aria-pressed')).toBe('true');
+>>>>>>> upstream/main
   });
 });

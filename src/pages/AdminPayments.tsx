@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router';
 import { backTo } from '@/components/admin';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { METHOD_LABELS } from '../constants/paymentMethods';
 import { adminPaymentsApi, type SearchStats } from '../api/adminPayments';
 import { DateField } from '../components/DateField';
 import { useCurrency } from '../hooks/useCurrency';
@@ -116,8 +117,15 @@ export default function AdminPayments() {
 
   // Check payment mutation
   const checkPaymentMutation = useMutation({
-    mutationFn: ({ method, paymentId }: { method: string; paymentId: number }) =>
-      adminPaymentsApi.checkPaymentStatus(method, paymentId),
+    mutationFn: ({
+      method,
+      paymentId,
+      source,
+    }: {
+      method: string;
+      paymentId: number;
+      source: 'provider' | 'landing';
+    }) => adminPaymentsApi.checkPaymentStatus(method, paymentId, source),
     onSuccess: async () => {
       await refetch();
       queryClient.invalidateQueries({ queryKey: ['admin-payments-search-stats'] });
@@ -128,8 +136,12 @@ export default function AdminPayments() {
   });
 
   const handleCheckPayment = (payment: PendingPayment) => {
-    setCheckingPaymentId(`${payment.method}_${payment.id}`);
-    checkPaymentMutation.mutate({ method: payment.method, paymentId: payment.id });
+    setCheckingPaymentId(`${payment.source ?? 'provider'}_${payment.method}_${payment.id}`);
+    checkPaymentMutation.mutate({
+      method: payment.method,
+      paymentId: payment.id,
+      source: payment.source ?? 'provider',
+    });
   };
 
   const handleResetSearch = () => {
@@ -180,7 +192,7 @@ export default function AdminPayments() {
           {!capabilities.hasBackButton && (
             <button
               onClick={() => navigate('/admin')}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-dark-700 bg-dark-800 transition-colors hover:border-dark-600"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-dark-700 bg-dark-800 transition-colors hover:border-dark-600"
             >
               <BackIcon />
             </button>
@@ -287,7 +299,7 @@ export default function AdminPayments() {
               <option value="">{t('admin.payments.allMethods')}</option>
               {methodOptions.map((method) => (
                 <option key={method} value={method}>
-                  {method}
+                  {METHOD_LABELS[method] ?? method}
                 </option>
               ))}
             </select>
@@ -298,7 +310,7 @@ export default function AdminPayments() {
       {/* Date range panel */}
       {showDateRange && (
         <div className="flex flex-wrap items-end gap-3 rounded-xl border border-accent-500/30 bg-accent-500/5 p-4">
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <label className="mb-1 block text-xs text-dark-400">
               {t('admin.payments.dateFrom')}
             </label>
@@ -309,7 +321,7 @@ export default function AdminPayments() {
               className="flex w-full items-center gap-2 rounded-lg border border-dark-700 bg-dark-800 px-3 py-2 text-sm text-dark-100 transition-colors hover:border-accent-500"
             />
           </div>
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <label className="mb-1 block text-xs text-dark-400">{t('admin.payments.dateTo')}</label>
             <DateField
               value={dateTo}
@@ -402,7 +414,7 @@ export default function AdminPayments() {
         ) : payments?.items && payments.items.length > 0 ? (
           <div className="space-y-3">
             {payments.items.map((payment) => {
-              const paymentKey = `${payment.method}_${payment.id}`;
+              const paymentKey = `${payment.source ?? 'provider'}_${payment.method}_${payment.id}`;
               const isChecking = checkingPaymentId === paymentKey;
               const isCancelled = payment.status.toLowerCase().includes('cancel');
 
@@ -412,7 +424,7 @@ export default function AdminPayments() {
                   className="rounded-xl border border-dark-700/30 bg-dark-800/30 p-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 basis-60">
                       {/* Status badge + method */}
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <StatusBadge status={payment.status_text} />
@@ -432,12 +444,16 @@ export default function AdminPayments() {
                           isCancelled ? 'text-dark-500 line-through opacity-60' : 'text-dark-50'
                         }`}
                       >
-                        {formatAmount(payment.amount_rubles)} {currencySymbol}
+                        {formatAmount(payment.amount_rubles)}
+                        {'\u00A0'}
+                        {currencySymbol}
                       </div>
 
                       {/* Invoice ID */}
                       <div className="mt-1 text-sm text-dark-400">
-                        <code className="font-mono text-accent-400">{payment.identifier}</code>
+                        <code className="font-mono text-accent-400 break-all">
+                          {payment.identifier}
+                        </code>
                       </div>
 
                       {/* User info */}
@@ -452,7 +468,7 @@ export default function AdminPayments() {
                                 e.stopPropagation();
                                 navigate(`/admin/users/${payment.user_id}`, backTo(location));
                               }}
-                              className="inline-flex items-center gap-1 transition-colors hover:underline"
+                              className="inline-flex max-w-full flex-wrap items-center gap-x-1 text-left transition-colors [overflow-wrap:anywhere] hover:underline"
                             >
                               {payment.user_username && (
                                 <span className="text-accent-400">@{payment.user_username}</span>
@@ -499,7 +515,7 @@ export default function AdminPayments() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-wrap gap-2 sm:flex-col">
                       {payment.payment_url && (
                         <a
                           href={payment.payment_url}
@@ -545,6 +561,7 @@ export default function AdminPayments() {
 
                   {/* Show result after check */}
                   {checkPaymentMutation.isSuccess &&
+                    checkPaymentMutation.variables?.source === (payment.source ?? 'provider') &&
                     checkPaymentMutation.variables?.paymentId === payment.id &&
                     checkPaymentMutation.variables?.method === payment.method && (
                       <div
@@ -558,6 +575,7 @@ export default function AdminPayments() {
                       </div>
                     )}
                   {checkPaymentMutation.isError &&
+                    checkPaymentMutation.variables?.source === (payment.source ?? 'provider') &&
                     checkPaymentMutation.variables?.paymentId === payment.id &&
                     checkPaymentMutation.variables?.method === payment.method && (
                       <div className="mt-3 rounded-lg border border-error-500/30 bg-error-500/10 p-2 text-sm text-error-400">

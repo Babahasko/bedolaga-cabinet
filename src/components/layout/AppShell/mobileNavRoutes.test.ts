@@ -30,6 +30,32 @@ describe('mobileNavItems', () => {
     expect(paths).toEqual(['/', '/subscriptions', '/balance', '/referral', '/support']);
   });
 
+<<<<<<< HEAD
+=======
+  it('простой вид убирает «Подписку»: главный экран и есть она', () => {
+    expect(mobileNavItems({ lite: true }).map((item) => item.path)).toEqual([
+      '/',
+      '/balance',
+      '/support',
+    ]);
+  });
+
+  it('простой вид не трогает слот колеса и рефералки', () => {
+    expect(mobileNavItems({ lite: true, wheelEnabled: true }).map((item) => item.path)).toEqual([
+      '/',
+      '/balance',
+      '/wheel',
+      '/support',
+    ]);
+    expect(mobileNavItems({ lite: true, referralEnabled: true }).map((item) => item.path)).toEqual([
+      '/',
+      '/balance',
+      '/referral',
+      '/support',
+    ]);
+  });
+
+>>>>>>> upstream/main
   it('ключ пункта совпадает с ключом перевода nav.*', () => {
     expect(mobileNavItems({ wheelEnabled: true }).map((item) => item.key)).toEqual([
       'dashboard',
@@ -73,6 +99,19 @@ describe('isMobileNavScreen', () => {
     expect(isMobileNavScreen('/subscription/purchase', items)).toBe(false);
   });
 
+<<<<<<< HEAD
+=======
+  it('в простом виде карточка подписки — обычная вложенная страница', () => {
+    // Кнопки «Подписка» там нет, значит и панель на карточке показывать не за
+    // чем: она вела бы в никуда. Сама главная и баланс панель сохраняют.
+    const liteItems = mobileNavItems({ lite: true });
+    expect(isMobileNavScreen('/subscriptions/12', liteItems)).toBe(false);
+    expect(isMobileNavScreen('/subscriptions', liteItems)).toBe(false);
+    expect(isMobileNavScreen('/', liteItems)).toBe(true);
+    expect(isMobileNavScreen('/balance', liteItems)).toBe(true);
+  });
+
+>>>>>>> upstream/main
   it('экран выключенного слота — нет', () => {
     expect(isMobileNavScreen('/referral', items)).toBe(false);
     expect(isMobileNavScreen('/wheel', mobileNavItems({}))).toBe(false);

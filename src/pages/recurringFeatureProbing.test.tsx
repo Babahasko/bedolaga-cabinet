@@ -51,7 +51,11 @@ const featureDisabled = () =>
     response: { status: 403, data: { detail: 'Platega recurrent disabled' } },
   });
 
+<<<<<<< HEAD
 const calls = { sbp: [] as number[], lava: [] as number[] };
+=======
+const calls = { sbp: [] as number[], lava: [] as number[], cashera: [] as number[] };
+>>>>>>> upstream/main
 const state = { purchaseOptions: {} as Record<string, unknown> };
 
 const subscription = (id: number) => ({
@@ -82,6 +86,13 @@ vi.mock('@/api/subscription', () => ({
       calls.lava.push(id);
       return featureDisabled();
     },
+<<<<<<< HEAD
+=======
+    getCasheraRecurring: (id: number) => {
+      calls.cashera.push(id);
+      return featureDisabled();
+    },
+>>>>>>> upstream/main
     getSubscriptions: () =>
       Promise.resolve({
         subscriptions: [subscription(1), subscription(2)],
@@ -120,12 +131,20 @@ if (!window.matchMedia) {
 beforeEach(() => {
   calls.sbp = [];
   calls.lava = [];
+<<<<<<< HEAD
+=======
+  calls.cashera = [];
+>>>>>>> upstream/main
   state.purchaseOptions = {
     sales_mode: 'tariffs',
     tariffs: [],
     balance_kopeks: 0,
     platega_recurrent_enabled: false,
     lava_recurrent_enabled: false,
+<<<<<<< HEAD
+=======
+    cashera_recurrent_enabled: false,
+>>>>>>> upstream/main
   };
 });
 
@@ -166,6 +185,10 @@ describe('страница подписки', () => {
 
     expect(calls.sbp).toEqual([]);
     expect(calls.lava).toEqual([]);
+<<<<<<< HEAD
+=======
+    expect(calls.cashera).toEqual([]);
+>>>>>>> upstream/main
   });
 
   it('спрашивает, когда автооплата включена', async () => {
@@ -173,12 +196,20 @@ describe('страница подписки', () => {
       ...state.purchaseOptions,
       platega_recurrent_enabled: true,
       lava_recurrent_enabled: true,
+<<<<<<< HEAD
+=======
+      cashera_recurrent_enabled: true,
+>>>>>>> upstream/main
     };
     await renderSubscription();
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(calls.sbp).toEqual([1]);
     expect(calls.lava).toEqual([1]);
+<<<<<<< HEAD
+=======
+    expect(calls.cashera).toEqual([1]);
+>>>>>>> upstream/main
   });
 });
 

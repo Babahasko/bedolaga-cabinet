@@ -5,6 +5,17 @@ import { useTheme } from '../../hooks/useTheme';
 import { useTrafficZone } from '../../hooks/useTrafficZone';
 import { getGlassColors } from '../../utils/glassTheme';
 import { HoverBorderGradient } from '../ui/hover-border-gradient';
+import { MonitorIcon } from '@/components/icons';
+
+/**
+ * До скольких устройств лимит показываем точками.
+ *
+ * Точка занимает 13px вместе с зазором, поэтому десять точек съедали 124px из
+ * ~272px плитки — тексту оставалось 80px, и «Подключить устройство» ломалось
+ * на четыре строки. Полоска-индикатор занимает фиксированные 64px при любом
+ * лимите, так что выше этого порога показываем её.
+ */
+const DOTS_MAX = 5;
 
 /**
  * До скольких устройств лимит показываем точками.
@@ -70,23 +81,9 @@ export default function ConnectDeviceTile({
       {/* Monitor icon */}
       <div
         className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] transition-colors duration-500"
-        style={{ background: `rgba(${zone.mainVarRaw}, 0.07)` }}
+        style={{ background: `rgba(${zone.mainVarRaw}, 0.07)`, color: zone.mainVar }}
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={zone.mainVar}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <rect x="2" y="3" width="20" height="14" rx="2" />
-          <path d="M12 17v4M8 21h8" />
-          <path d="M12 8v4M10 10h4" opacity="0.7" />
-        </svg>
+        <MonitorIcon className="h-4 w-4" />
       </div>
 
       {/* Text */}

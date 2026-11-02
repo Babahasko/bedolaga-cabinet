@@ -10,7 +10,14 @@
  * выключено») и работаем по-прежнему — через 403.
  */
 
+<<<<<<< HEAD
 export type RecurringFeatureKey = 'platega_recurrent_enabled' | 'lava_recurrent_enabled';
+=======
+export type RecurringFeatureKey =
+  | 'platega_recurrent_enabled'
+  | 'lava_recurrent_enabled'
+  | 'cashera_recurrent_enabled';
+>>>>>>> upstream/main
 
 export function isRecurringFeatureOff(purchaseOptions: unknown, key: RecurringFeatureKey): boolean {
   if (!purchaseOptions || typeof purchaseOptions !== 'object') return false;

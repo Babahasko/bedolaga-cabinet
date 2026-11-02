@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+<<<<<<< HEAD
 import type { JobKind, ReachabilityStatus } from '@/api/reachability';
+=======
+import type { GeoPreview, JobKind, ReachabilityStatus } from '@/api/reachability';
+>>>>>>> upstream/main
 import { useNativeDialog } from '@/platform/hooks/useNativeDialog';
 import { useNotify } from '@/platform/hooks/useNotify';
 import { getApiErrorMessage } from '@/utils/api-error';
@@ -27,8 +31,15 @@ export interface LaunchState {
   cost: number | null;
   balance: number | null;
   balanceAfter: number | null;
+<<<<<<< HEAD
   /** Оценка времени пачки из превью; у одиночной задачи нет. */
   eta: number | null;
+=======
+  /** Оценка времени: у пачки — из превью, у GEO — из прогноза сервиса; у остальных нет. */
+  eta: number | null;
+  /** GEO: числа сервиса из расчёта; у остальных видов null. */
+  geo: GeoPreview | null;
+>>>>>>> upstream/main
   /** Почему запускать нельзя; null — можно. */
   blocker: string | null;
   isPricing: boolean;
@@ -90,10 +101,23 @@ export function useLaunch<B, R>(
   const cost = preview.data?.cost_kopeks ?? null;
   const balance = preview.data?.balance_kopeks ?? status?.balance_kopeks ?? null;
   const balanceAfter = cost !== null && balance !== null ? balance - cost : null;
+  const geo = preview.data?.geo ?? null;
+  const eta =
+    adapter.kind === 'geo'
+      ? geo?.estimated_sec
+        ? Math.max(1, Math.ceil(geo.estimated_sec / 60))
+        : null
+      : (preview.data?.estimated_minutes ?? null);
 
   let blocker: string | null = null;
   if (!body || targetsCount === 0) blocker = t('admin.reachability.launch.noTargets');
+<<<<<<< HEAD
   else if (unitsCount === 0) blocker = t('admin.reachability.launch.noUnitsChosen');
+=======
+  // Симок у GEO нет: города и провайдеры выбирает сервис.
+  else if (adapter.kind !== 'geo' && unitsCount === 0)
+    blocker = t('admin.reachability.launch.noUnitsChosen');
+>>>>>>> upstream/main
   else if (busy)
     blocker = t(busy.key, {
       ...busy.options,
@@ -115,6 +139,7 @@ export function useLaunch<B, R>(
     return [
       t('admin.reachability.launch.confirmQuestion', {
         kind: t(`admin.reachability.kinds.${adapter.kind}`),
+<<<<<<< HEAD
       }),
       t(
         adapter.noun === 'servers'
@@ -128,7 +153,24 @@ export function useLaunch<B, R>(
       t('admin.reachability.launch.confirmUnits', {
         count: summary.units.length,
         list: formatList(summary.units, listed, more),
+=======
+>>>>>>> upstream/main
       }),
+      t(
+        adapter.noun === 'servers'
+          ? 'admin.reachability.launch.confirmServers'
+          : 'admin.reachability.launch.confirmTargets',
+        {
+          count: summary.targets.length,
+          list: formatList(summary.targets, listed, more),
+        },
+      ),
+      adapter.kind === 'geo'
+        ? t('admin.reachability.geo.launch.confirmCities', { count: geo?.n_nodes ?? 0 })
+        : t('admin.reachability.launch.confirmUnits', {
+            count: summary.units.length,
+            list: formatList(summary.units, listed, more),
+          }),
       summary.exact
         ? t('admin.reachability.launch.confirmPrice', { price })
         : t('admin.reachability.launch.confirmEstimate', { price }),
@@ -179,7 +221,12 @@ export function useLaunch<B, R>(
     cost,
     balance,
     balanceAfter,
+<<<<<<< HEAD
     eta: preview.data?.estimated_minutes ?? null,
+=======
+    eta,
+    geo,
+>>>>>>> upstream/main
     blocker,
     isPricing,
     isPending: create.isPending,

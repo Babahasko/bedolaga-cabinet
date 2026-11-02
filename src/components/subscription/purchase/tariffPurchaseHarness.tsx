@@ -17,7 +17,11 @@ export const period = (overrides: Partial<TariffPeriod> & { days: number }): Tar
     label: `${overrides.days} дней`,
     months: Math.round(overrides.days / 30),
     price_kopeks: overrides.days * 1000,
+<<<<<<< HEAD
     price_label: `${overrides.days * 10} ₽`,
+=======
+    price_label: `${overrides.days * 10}\u00A0₽`,
+>>>>>>> upstream/main
     price_per_month_kopeks: 30000,
     price_per_month_label: '300 ₽',
     is_highlighted: false,

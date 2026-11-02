@@ -226,7 +226,11 @@ export default function AdminTicketSettings() {
                 className="h-5 w-5 rounded border-dark-700 bg-dark-800 text-accent-500 focus:ring-2 focus:ring-accent-500 focus:ring-offset-0"
               />
               <div>
+<<<<<<< HEAD
                 <div className="flex items-center gap-2 font-medium text-dark-100">
+=======
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-dark-100">
+>>>>>>> upstream/main
                   {t('admin.tickets.slaEnabled')}
                   {envLocked.has('sla_enabled') && <EnvLockedBadge />}
                 </div>
@@ -237,7 +241,11 @@ export default function AdminTicketSettings() {
 
           {/* SLA Minutes */}
           <div className="mb-4">
+<<<<<<< HEAD
             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-dark-300">
+=======
+            <label className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-dark-300">
+>>>>>>> upstream/main
               {t('admin.tickets.slaMinutes')}
               {envLocked.has('sla_minutes') && <EnvLockedBadge />}
             </label>
@@ -265,7 +273,11 @@ export default function AdminTicketSettings() {
 
           {/* Check Interval */}
           <div className="mb-4">
+<<<<<<< HEAD
             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-dark-300">
+=======
+            <label className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-dark-300">
+>>>>>>> upstream/main
               {t('admin.tickets.checkInterval')}
               {envLocked.has('sla_check_interval_seconds') && <EnvLockedBadge />}
             </label>
@@ -295,7 +307,11 @@ export default function AdminTicketSettings() {
 
           {/* Reminder Cooldown */}
           <div>
+<<<<<<< HEAD
             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-dark-300">
+=======
+            <label className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-dark-300">
+>>>>>>> upstream/main
               {t('admin.tickets.reminderCooldown')}
               {envLocked.has('sla_reminder_cooldown_minutes') && <EnvLockedBadge />}
             </label>

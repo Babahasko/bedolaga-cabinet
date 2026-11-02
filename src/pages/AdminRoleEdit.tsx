@@ -9,7 +9,7 @@ import {
   type UpdateRolePayload,
 } from '@/api/rbac';
 import { AdminBackButton } from '@/components/admin';
-import { ChevronDownIcon } from '@/components/icons';
+import { CheckIcon, ChevronDownIcon, MinusIcon } from '@/components/icons';
 import { PageSkeleton, Skeleton } from '@/components/ui/skeleton';
 
 // === Constants ===
@@ -143,35 +143,22 @@ function PermissionMatrix({
                   }`}
                   aria-label={t('admin.roles.form.toggleSection', { section: section.section })}
                 >
-                  {(allSelected || partialSelected) && (
-                    <svg
-                      className="h-3 w-3 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={3}
-                    >
-                      {allSelected ? (
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M4.5 12.75l6 6 9-13.5"
-                        />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-                      )}
-                    </svg>
-                  )}
+                  {(allSelected || partialSelected) &&
+                    (allSelected ? (
+                      <CheckIcon className="h-3 w-3 text-white" />
+                    ) : (
+                      <MinusIcon className="h-3 w-3 text-white" />
+                    ))}
                 </button>
                 <button
                   type="button"
                   onClick={() => toggleExpand(section.section)}
-                  className="flex flex-1 items-center justify-between"
+                  className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
                 >
-                  <span className="text-sm font-medium text-dark-200">
+                  <span className="min-w-0 text-sm font-medium text-dark-200 [overflow-wrap:anywhere]">
                     {t(`admin.roles.form.permissionSections.${section.section}`, section.section)}
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
                     <span className="text-xs text-dark-500">
                       {section.actions.filter((a) => isPermSelected(section.section, a)).length}/
                       {section.actions.length}
@@ -232,7 +219,7 @@ export default function AdminRoleEdit() {
   const [formError, setFormError] = useState<string | null>(null);
 
   // Fetch role for editing
-  const { isLoading: isLoadingRole } = useQuery({
+  const { data: role, isLoading: isLoadingRole } = useQuery({
     queryKey: ['admin-role', id],
     queryFn: () => rbacApi.getRoles(),
     enabled: isEdit,
@@ -326,6 +313,8 @@ export default function AdminRoleEdit() {
     }));
   }, []);
 
+  const isSystemRole = isEdit && role?.is_system === true;
+
   const handleSubmit = useCallback(
     (e: React.SyntheticEvent) => {
       e.preventDefault();
@@ -339,7 +328,7 @@ export default function AdminRoleEdit() {
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
-        level: formData.level,
+        ...(isSystemRole ? {} : { level: formData.level }),
         permissions: formData.permissions,
         color: formData.color,
       };
@@ -347,10 +336,10 @@ export default function AdminRoleEdit() {
       if (isEdit) {
         updateMutation.mutate({ roleId: Number(id), payload });
       } else {
-        createMutation.mutate(payload);
+        createMutation.mutate({ ...payload, level: formData.level });
       }
     },
-    [formData, isEdit, id, createMutation, updateMutation, t],
+    [formData, isEdit, isSystemRole, id, createMutation, updateMutation, t],
   );
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -426,16 +415,18 @@ export default function AdminRoleEdit() {
                   min={0}
                   max={999}
                   value={formData.level}
+                  disabled={isSystemRole}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, level: Number(e.target.value) }))
                   }
-                  className="flex-1 accent-accent-500"
+                  className="min-w-0 flex-1 accent-accent-500"
                 />
                 <input
                   type="number"
                   min={0}
                   max={999}
                   value={formData.level}
+                  disabled={isSystemRole}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,

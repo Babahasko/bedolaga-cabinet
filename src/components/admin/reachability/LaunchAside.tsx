@@ -15,6 +15,37 @@ export interface LaunchProps {
   launch: LaunchState;
   /** Строка под итогом: «Списывается только за проверенные симки…». */
   hint?: string;
+<<<<<<< HEAD
+=======
+  /** GEO: сервис отказал «слишком много городов» и предложил потолок — кнопка ставит его в форму. */
+  onApplyCityLimit?: (limit: number) => void;
+}
+
+/** Число из отказа бота «…сервис предлагает потолок N городов». */
+const SUGGESTED_LIMIT = /потолок (\d+)/;
+
+function suggestedCityLimit(launch: LaunchState): number | null {
+  if (launch.kind !== 'geo' || !launch.blocker) return null;
+  const match = SUGGESTED_LIMIT.exec(launch.blocker);
+  return match ? Number(match[1]) : null;
+}
+
+function ApplyCityLimit({
+  launch,
+  onApply,
+}: {
+  launch: LaunchState;
+  onApply?: (n: number) => void;
+}) {
+  const { t } = useTranslation();
+  const limit = suggestedCityLimit(launch);
+  if (limit === null || !onApply || launch.confirming) return null;
+  return (
+    <Button variant="secondary" className="mt-2" onClick={() => onApply(limit)}>
+      {t('admin.reachability.geo.launch.applyLimit', { count: limit })}
+    </Button>
+  );
+>>>>>>> upstream/main
 }
 
 function skippedNames(list: SkippedUnit[] | undefined, catalog: Parameters<typeof unitNames>[1]) {
@@ -30,6 +61,10 @@ type Translate = (key: string, options?: Record<string, unknown>) => string;
 function runKey(launch: LaunchState, short: boolean): string {
   const suffix = short ? 'Short' : '';
   if (launch.noun === 'servers') return `run${suffix}Hosts`;
+<<<<<<< HEAD
+=======
+  if (launch.kind === 'geo') return `run${suffix}Geo`;
+>>>>>>> upstream/main
   if (launch.kind === 'vless') return `run${suffix}Vless`;
   if (launch.kind === 'scan') return `run${suffix}Scan`;
   return `run${suffix}Probe`;
@@ -45,10 +80,17 @@ export function primaryLabel(t: Translate, launch: LaunchState, short: boolean):
   if (launch.targetsCount === 0 || (!short && price === null)) {
     return t('admin.reachability.launch.runEmpty');
   }
+<<<<<<< HEAD
   return t(`admin.reachability.launch.${runKey(launch, short)}`, {
     count: launch.targetsCount,
     price,
   });
+=======
+  // GEO считает города, не цели: «Проверить 89 городов».
+  const count =
+    launch.kind === 'geo' ? (launch.geo?.n_nodes ?? launch.targetsCount) : launch.targetsCount;
+  return t(`admin.reachability.launch.${runKey(launch, short)}`, { count, price });
+>>>>>>> upstream/main
 }
 
 /** Строки итога: цели × симки, цена, остаток, время, пропуски. Общие для aside и нижней панели. */
@@ -63,14 +105,37 @@ function LaunchDetails({ launch }: { launch: LaunchState }) {
         <dt className="text-dark-400">{t('admin.reachability.launch.targetsRow')}</dt>
         <dd className="text-dark-100">
           {t(`admin.reachability.launch.${targetsKey}`, { count: launch.targetsCount })}
+<<<<<<< HEAD
         </dd>
       </div>
       <div className="flex justify-between gap-3">
         <dt className="text-dark-400">{t('admin.reachability.launch.unitsRow')}</dt>
         <dd className="text-dark-100">
           {t('admin.reachability.launch.summaryUnits', { count: launch.unitsCount })}
+=======
+>>>>>>> upstream/main
         </dd>
       </div>
+      {launch.kind === 'geo' ? (
+        <div className="flex justify-between gap-3">
+          <dt className="text-dark-400">{t('admin.reachability.geo.launch.citiesRow')}</dt>
+          <dd className="text-right text-dark-100">
+            {launch.isPricing ? '…' : (launch.geo?.n_nodes ?? '—')}
+            {launch.geo?.max_nodes ? (
+              <span className="block text-xs text-dark-400">
+                {t('admin.reachability.geo.launch.maxNodes', { count: launch.geo.max_nodes })}
+              </span>
+            ) : null}
+          </dd>
+        </div>
+      ) : (
+        <div className="flex justify-between gap-3">
+          <dt className="text-dark-400">{t('admin.reachability.launch.unitsRow')}</dt>
+          <dd className="text-dark-100">
+            {t('admin.reachability.launch.summaryUnits', { count: launch.unitsCount })}
+          </dd>
+        </div>
+      )}
       {!launch.blocker && (
         <div className="flex justify-between gap-3 border-t border-dark-700/60 pt-1.5">
           <dt className="text-dark-400">{t('admin.reachability.launch.total')}</dt>
@@ -127,7 +192,11 @@ function LaunchDetails({ launch }: { launch: LaunchState }) {
 }
 
 /** Десктоп: прилипающий блок «Запуск» справа от формы. */
+<<<<<<< HEAD
 export function LaunchAside({ launch, hint }: LaunchProps) {
+=======
+export function LaunchAside({ launch, hint, onApplyCityLimit }: LaunchProps) {
+>>>>>>> upstream/main
   const { t } = useTranslation();
   return (
     <aside
@@ -146,6 +215,7 @@ export function LaunchAside({ launch, hint }: LaunchProps) {
       {launch.blocker && !launch.confirming && (
         <p className="mt-3 text-sm text-dark-400">{launch.blocker}</p>
       )}
+      <ApplyCityLimit launch={launch} onApply={onApplyCityLimit} />
       <div className="mt-4 flex gap-2">
         {launch.confirming && (
           <Button variant="secondary" onClick={launch.cancel}>
@@ -170,7 +240,11 @@ export function LaunchAside({ launch, hint }: LaunchProps) {
  * Телефон и Mini App: панель у низа экрана, детали раскрываются тапом по итогу.
  * Пока открыта экранная клавиатура, прячется — иначе всплывает над клавиатурой.
  */
+<<<<<<< HEAD
 export function LaunchBar({ launch }: LaunchProps) {
+=======
+export function LaunchBar({ launch, onApplyCityLimit }: LaunchProps) {
+>>>>>>> upstream/main
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const keyboardOpen = useVirtualKeyboard();
@@ -199,6 +273,7 @@ export function LaunchBar({ launch }: LaunchProps) {
             {launch.blocker && !launch.confirming && (
               <p className="mt-2 text-xs text-dark-400">{launch.blocker}</p>
             )}
+            <ApplyCityLimit launch={launch} onApply={onApplyCityLimit} />
           </div>
         )}
         <div className="flex items-center gap-3">
@@ -222,10 +297,22 @@ export function LaunchBar({ launch }: LaunchProps) {
                     t('admin.reachability.launch.formula', {
                       targets: t(`admin.reachability.launch.${targetsKey}`, {
                         count: launch.targetsCount,
+<<<<<<< HEAD
                       }),
                       units: t('admin.reachability.launch.summaryUnits', {
                         count: launch.unitsCount,
                       }),
+=======
+                      }),
+                      units:
+                        launch.kind === 'geo'
+                          ? t('admin.reachability.geo.result.cities', {
+                              count: launch.geo?.n_nodes ?? 0,
+                            })
+                          : t('admin.reachability.launch.summaryUnits', {
+                              count: launch.unitsCount,
+                            }),
+>>>>>>> upstream/main
                     })}
                 </span>
               </span>

@@ -1,7 +1,11 @@
 import { render as rtlRender, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
+<<<<<<< HEAD
 import type { Tariff } from '@/types';
+=======
+import type { Subscription, Tariff } from '@/types';
+>>>>>>> upstream/main
 import { TariffPickerGrid } from './purchase/TariffPickerGrid';
 
 /**
@@ -29,7 +33,11 @@ const base = (overrides: Partial<Tariff> & { id: number; name: string }): Tariff
 
 export function render(
   tariffs: Array<Partial<Tariff> & { id: number; name: string }>,
+<<<<<<< HEAD
   options: { currentTariffId?: number } = {},
+=======
+  options: { currentTariffId?: number; subscription?: Partial<Subscription> } = {},
+>>>>>>> upstream/main
 ) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   rtlRender(
@@ -38,9 +46,17 @@ export function render(
         <TariffPickerGrid
           tariffs={tariffs.map(base)}
           subscription={
+<<<<<<< HEAD
             options.currentTariffId
               ? ({ tariff_id: options.currentTariffId, is_active: true } as never)
               : null
+=======
+            options.subscription
+              ? (options.subscription as never)
+              : options.currentTariffId
+                ? ({ tariff_id: options.currentTariffId, is_active: true } as never)
+                : null
+>>>>>>> upstream/main
           }
           purchaseOptions={undefined}
           isTariffsMode

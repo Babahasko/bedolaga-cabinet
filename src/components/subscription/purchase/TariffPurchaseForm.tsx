@@ -1,3 +1,4 @@
+import { tariffTrafficLabel } from '../../../utils/tariffTrafficLabel';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -7,13 +8,21 @@ import { getErrorMessage, getInsufficientBalanceError } from '../../../utils/sub
 import { useCurrency } from '../../../hooks/useCurrency';
 import { usePromoDiscount } from '../../../hooks/usePromoDiscount';
 import { dailyPriceQuote } from './dailyPrice';
+<<<<<<< HEAD
+=======
+import { customDaysPrice } from './customDaysPrice';
+>>>>>>> upstream/main
 import { usePlatform } from '../../../platform';
 import { openPaymentUrl } from '../../../utils/openPaymentUrl';
 import { getMonthlyPriceKopeks } from '../../../utils/pricing';
 import { pickBestValue } from '../../../utils/bestValue';
 import InsufficientBalancePrompt from '../../InsufficientBalancePrompt';
 import type { Tariff, TariffPeriod } from '../../../types';
+<<<<<<< HEAD
 import { BestValueBadge } from '../BestValueBadge';
+=======
+import { BestValueBadge, bestValueFrame } from '../BestValueBadge';
+>>>>>>> upstream/main
 
 // ──────────────────────────────────────────────────────────────────
 // TariffPurchaseForm
@@ -41,6 +50,8 @@ export interface TariffPurchaseFormProps {
   sbpPurchaseEnabled?: boolean;
   /** Оформление привязкой Lava доступно — показать вторую CTA. */
   lavaPurchaseEnabled?: boolean;
+  /** Оформление привязкой Cashera доступно — показать вторую CTA. */
+  casheraPurchaseEnabled?: boolean;
   onBack: () => void;
 }
 
@@ -50,6 +61,7 @@ export function TariffPurchaseForm({
   balanceKopeks,
   sbpPurchaseEnabled = false,
   lavaPurchaseEnabled = false,
+  casheraPurchaseEnabled = false,
   onBack,
 }: TariffPurchaseFormProps) {
   const { t } = useTranslation();
@@ -59,13 +71,19 @@ export function TariffPurchaseForm({
   const { applyPromoDiscount } = usePromoDiscount();
   // Та же котировка, что на карточке тарифа: серверная цена + промокод один раз.
   const dailyQuote = dailyPriceQuote(tariff, applyPromoDiscount);
+<<<<<<< HEAD
+=======
+  const customDayUnitPrice =
+    tariff.custom_days_pricing?.price_per_day_kopeks ?? tariff.price_per_day_kopeks ?? 0;
+>>>>>>> upstream/main
   const { openLink, platform } = usePlatform();
   const ref = useRef<HTMLDivElement>(null);
+  const checkoutAttempt = useRef<{ signature: string; id: string } | null>(null);
 
   const formatPrice = (kopeks: number) =>
     kopeks === 0
       ? t('subscription.free', 'Бесплатно')
-      : `${formatAmount(kopeks / 100)} ${currencySymbol}`;
+      : `${formatAmount(kopeks / 100)}\u00A0${currencySymbol}`;
 
   // Form-internal state — seeded from the tariff prop. Resets via
   // `key={tariff.id}` on the parent's render.
@@ -95,11 +113,25 @@ export function TariffPurchaseForm({
       // uses it to resolve the exact target row by ID, avoiding the
       // race with concurrent panel webhooks that would otherwise hit
       // the partial UNIQUE on uq_subscriptions_user_tariff_active.
+      if (isDailyTariff) {
+        return subscriptionApi.purchaseTariff(tariff.id, days, trafficGb, subscriptionId);
+      }
+      const signature = JSON.stringify([tariff.id, days, trafficGb, subscriptionId]);
+      if (checkoutAttempt.current?.signature !== signature) {
+        // A retry keeps its identity even if the balance or quote was refreshed.
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+        const id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        checkoutAttempt.current = { signature, id };
+      }
       return subscriptionApi.purchaseTariff(
         tariff.id,
         days,
         trafficGb,
-        subscriptionId ?? undefined,
+        subscriptionId,
+        checkoutAttempt.current.id,
       );
     },
     onSuccess: () => {
@@ -113,7 +145,8 @@ export function TariffPurchaseForm({
   // СБП-оформление: первое списание = подтверждение привязки в банке; период
   // на форме не участвует — списания идут по каденс-правилу тарифа.
   const sbpPurchaseMutation = useMutation({
-    mutationFn: () => subscriptionApi.purchaseWithSbpRecurring(tariff.id),
+    mutationFn: () =>
+      subscriptionApi.purchaseWithSbpRecurring(tariff.id, subscriptionId ?? undefined),
     onSuccess: (data) => {
       if (data.redirect_url) {
         openPaymentUrl(data.redirect_url, platform, openLink);
@@ -154,7 +187,8 @@ export function TariffPurchaseForm({
   );
 
   const lavaPurchaseMutation = useMutation({
-    mutationFn: () => subscriptionApi.purchaseWithLavaRecurring(tariff.id),
+    mutationFn: () =>
+      subscriptionApi.purchaseWithLavaRecurring(tariff.id, subscriptionId ?? undefined),
     onSuccess: (data) => {
       if (data.redirect_url) {
         openPaymentUrl(data.redirect_url, platform, openLink);
@@ -194,6 +228,48 @@ export function TariffPurchaseForm({
     </>
   );
 
+  const casheraPurchaseMutation = useMutation({
+    mutationFn: () =>
+      subscriptionApi.purchaseWithCasheraRecurring(tariff.id, subscriptionId ?? undefined),
+    onSuccess: (data) => {
+      if (data.redirect_url) {
+        openPaymentUrl(data.redirect_url, platform, openLink);
+      }
+      queryClient.invalidateQueries({ queryKey: ['subscription'] });
+      queryClient.invalidateQueries({ queryKey: ['purchase-options'] });
+      queryClient.invalidateQueries({ queryKey: ['subscriptions-list'] });
+      queryClient.invalidateQueries({ queryKey: ['cashera-recurring', data.subscription_id] });
+      navigate('/subscriptions', { replace: true });
+    },
+  });
+
+  const casheraPurchaseButton = casheraPurchaseEnabled && (
+    <>
+      <button
+        onClick={() => casheraPurchaseMutation.mutate()}
+        disabled={casheraPurchaseMutation.isPending || purchaseMutation.isPending}
+        className="mt-2 w-full rounded-xl border border-accent-500/40 bg-accent-500/10 py-3 text-sm font-medium text-accent-400 transition-colors hover:bg-accent-500/20 disabled:opacity-50"
+      >
+        {casheraPurchaseMutation.isPending ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            {t('common.loading')}
+          </span>
+        ) : (
+          t('subscription.casheraRecurring.purchaseButton')
+        )}
+      </button>
+      <div className="mt-1.5 text-center text-[11px] text-dark-500">
+        {t('subscription.casheraRecurring.purchaseHint')}
+      </div>
+      {casheraPurchaseMutation.isError && (
+        <div className="mt-2 text-center text-sm text-error-400">
+          {getErrorMessage(casheraPurchaseMutation.error)}
+        </div>
+      )}
+    </>
+  );
+
   // Smooth scroll the form into view when first mounted.
   useEffect(() => {
     if (ref.current) {
@@ -218,7 +294,9 @@ export function TariffPurchaseForm({
         <div className="flex flex-wrap gap-4 text-sm">
           <div>
             <span className="text-dark-500">{t('subscription.traffic')}:</span>
-            <span className="ml-2 text-dark-200">{tariff.traffic_limit_label}</span>
+            <span className="ml-2 text-dark-200">
+              {tariffTrafficLabel(tariff.traffic_limit_gb, t)}
+            </span>
           </div>
           <div>
             <span className="text-dark-500">{t('subscription.devices')}:</span>
@@ -249,7 +327,11 @@ export function TariffPurchaseForm({
                 <span className="text-dark-500 line-through">
                   {formatPrice(dailyQuote.original)}
                 </span>
+<<<<<<< HEAD
                 {dailyQuote.percent && dailyQuote.percent > 0 && (
+=======
+                {dailyQuote.percent != null && dailyQuote.percent > 0 && (
+>>>>>>> upstream/main
                   <span
                     className={`rounded px-1.5 py-0.5 text-xs ${
                       dailyQuote.isPromoGroup
@@ -311,6 +393,7 @@ export function TariffPurchaseForm({
 
                 {sbpPurchaseButton}
                 {lavaPurchaseButton}
+                {casheraPurchaseButton}
 
                 {purchaseMutation.isError &&
                   !getInsufficientBalanceError(purchaseMutation.error) && (
@@ -351,6 +434,8 @@ export function TariffPurchaseForm({
                   const displayOriginal = promoPeriod.original;
                   const displayPrice = promoPeriod.price;
                   const displayPerMonth = getMonthlyPriceKopeks(displayPrice, period.days);
+                  const isSelectedPeriod =
+                    selectedTariffPeriod?.days === period.days && !useCustomDays;
 
                   return (
                     <button
@@ -359,6 +444,7 @@ export function TariffPurchaseForm({
                         setSelectedTariffPeriod(period);
                         setUseCustomDays(false);
                       }}
+<<<<<<< HEAD
                       // Две метки уживаются: жёлтый контур говорит «выгодный»,
                       // заливка и внутреннее кольцо — «выбран». Раньше выбор
                       // затирал жёлтую рамку, и подсказка исчезала ровно у того
@@ -370,10 +456,20 @@ export function TariffPurchaseForm({
                             : 'border border-accent-500 bg-accent-500/10'
                           : period.is_highlighted
                             ? 'border-2 border-urgent-400 bg-dark-800/50'
+=======
+                      className={`relative rounded-xl p-4 text-left transition-all ${
+                        period.is_highlighted
+                          ? `${bestValueFrame(isSelectedPeriod)} ${isSelectedPeriod ? 'bg-accent-500/10' : 'bg-dark-800/50'}`
+                          : isSelectedPeriod
+                            ? 'border border-accent-500 bg-accent-500/10'
+>>>>>>> upstream/main
                             : 'border border-dark-700/50 bg-dark-800/50 hover:border-dark-600'
                       }`}
                     >
-                      {displayDiscount && displayDiscount > 0 && (
+                      {/* Плашка первой строкой, как в продлении; скидка — в правом
+                          верхнем углу поверх рамки, они не пересекаются. */}
+                      {period.is_highlighted && <BestValueBadge className="mb-2" />}
+                      {displayDiscount != null && displayDiscount > 0 && (
                         <div
                           className={`absolute -right-2 -top-2 rounded-full px-2 py-0.5 text-xs font-medium text-white ${
                             promoPeriod.isPromoGroup ? 'bg-success-500' : 'bg-warning-500'
@@ -412,7 +508,7 @@ export function TariffPurchaseForm({
             {/* No periods available fallback */}
             {tariff.periods.length === 0 &&
               !useCustomDays &&
-              !(tariff.custom_days_enabled && (tariff.price_per_day_kopeks ?? 0) > 0) && (
+              !(tariff.custom_days_enabled && customDayUnitPrice > 0) && (
                 <div className="rounded-xl border border-warning-500/30 bg-warning-500/10 p-4 text-center">
                   <div className="mb-2 text-sm font-medium text-warning-400">
                     {t('subscription.noPeriodsAvailable')}
@@ -427,7 +523,7 @@ export function TariffPurchaseForm({
               )}
 
             {/* Custom days option */}
-            {tariff.custom_days_enabled && (tariff.price_per_day_kopeks ?? 0) > 0 && (
+            {tariff.custom_days_enabled && customDayUnitPrice > 0 && (
               <div className="rounded-xl border border-dark-700/50 bg-dark-800/50 p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="font-medium text-dark-200">
@@ -459,7 +555,7 @@ export function TariffPurchaseForm({
                         max={tariff.max_days ?? 365}
                         value={customDays}
                         onChange={(e) => setCustomDays(parseInt(e.target.value))}
-                        className="flex-1 accent-accent-500"
+                        className="min-w-0 flex-1 accent-accent-500"
                       />
                       <input
                         type="number"
@@ -481,21 +577,27 @@ export function TariffPurchaseForm({
                       />
                     </div>
                     {(() => {
-                      const basePrice = customDays * (tariff.price_per_day_kopeks ?? 0);
-                      const existingOriginal =
-                        tariff.original_price_per_day_kopeks &&
-                        tariff.original_price_per_day_kopeks > (tariff.price_per_day_kopeks ?? 0)
-                          ? customDays * tariff.original_price_per_day_kopeks
-                          : undefined;
+                      const { price: basePrice, original: existingOriginal } = customDaysPrice(
+                        tariff,
+                        customDays,
+                      );
                       const promoCustom = applyPromoDiscount(basePrice, existingOriginal);
                       return (
-                        <div className="flex justify-between text-sm">
+                        <div className="flex flex-wrap justify-between gap-x-3 text-sm">
+                          {/* «/день» — уже в переводе; второй «/» давал «₽//день». */}
                           <span className="text-dark-400">
                             {t('subscription.days', { count: customDays })} ×{' '}
-                            {formatPrice(tariff.price_per_day_kopeks ?? 0)}/
-                            {t('subscription.customDays.perDay')}
+                            <span className="whitespace-nowrap">
+                              {formatPrice(customDayUnitPrice)}
+                              {t('subscription.customDays.perDay')}
+                            </span>
+                            {tariff.extra_devices_count > 0 && (
+                              <span className="block">
+                                + {t('subscription.extraDevices')} ({tariff.extra_devices_count})
+                              </span>
+                            )}
                           </span>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 whitespace-nowrap">
                             <span className="font-medium text-accent-400">
                               {formatPrice(promoCustom.price)}
                             </span>
@@ -556,22 +658,24 @@ export function TariffPurchaseForm({
                 {!useCustomTraffic && (
                   <div className="text-sm text-dark-400">
                     {t('subscription.customTraffic.default', {
-                      label: tariff.traffic_limit_label,
+                      label: tariffTrafficLabel(tariff.traffic_limit_gb, t),
                     })}
                   </div>
                 )}
                 {useCustomTraffic && (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-4">
+                    {/* Ползунок сжимается, поле с «ГБ» — нет: на 360 «ГБ» упиралось
+                        в рамку карточки. */}
+                    <div className="flex items-center gap-3">
                       <input
                         type="range"
                         min={tariff.min_traffic_gb ?? 1}
                         max={tariff.max_traffic_gb ?? 1000}
                         value={customTrafficGb}
                         onChange={(e) => setCustomTrafficGb(parseInt(e.target.value))}
-                        className="flex-1 accent-accent-500"
+                        className="min-w-0 flex-1 accent-accent-500"
                       />
-                      <div className="flex items-center gap-2">
+                      <div className="flex shrink-0 items-center gap-2">
                         <input
                           type="number"
                           value={customTrafficGb}
@@ -593,13 +697,15 @@ export function TariffPurchaseForm({
                         <span className="text-dark-400">{t('common.units.gb')}</span>
                       </div>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex flex-wrap justify-between gap-x-3 text-sm">
                       <span className="text-dark-400">
                         {customTrafficGb} {t('common.units.gb')} ×{' '}
-                        {formatPrice(tariff.traffic_price_per_gb_kopeks ?? 0)}/
-                        {t('common.units.gb')}
+                        <span className="whitespace-nowrap">
+                          {formatPrice(tariff.traffic_price_per_gb_kopeks ?? 0)}/
+                          {t('common.units.gb')}
+                        </span>
                       </span>
-                      <span className="font-medium text-accent-400">
+                      <span className="whitespace-nowrap font-medium text-accent-400">
                         +{formatPrice(customTrafficGb * (tariff.traffic_price_per_gb_kopeks ?? 0))}
                       </span>
                     </div>
@@ -613,14 +719,12 @@ export function TariffPurchaseForm({
           {(selectedTariffPeriod || useCustomDays) && (
             <div className="rounded-xl bg-dark-800/50 p-5">
               {(() => {
+                const customQuote = customDaysPrice(tariff, customDays);
                 const basePeriodPrice = useCustomDays
-                  ? customDays * (tariff.price_per_day_kopeks ?? 0)
+                  ? customQuote.price
                   : selectedTariffPeriod?.price_kopeks || 0;
                 const existingPeriodOriginal = useCustomDays
-                  ? tariff.original_price_per_day_kopeks &&
-                    tariff.original_price_per_day_kopeks > (tariff.price_per_day_kopeks ?? 0)
-                    ? customDays * tariff.original_price_per_day_kopeks
-                    : undefined
+                  ? customQuote.original
                   : selectedTariffPeriod?.original_price_kopeks &&
                       selectedTariffPeriod.original_price_kopeks > selectedTariffPeriod.price_kopeks
                     ? selectedTariffPeriod.original_price_kopeks
@@ -641,12 +745,12 @@ export function TariffPurchaseForm({
                   <>
                     <div className="mb-4 space-y-2">
                       {useCustomDays ? (
-                        <div className="flex justify-between text-sm text-dark-300">
+                        <div className="flex flex-wrap justify-between gap-x-3 text-sm text-dark-300">
                           <span>
                             {t('subscription.stepPeriod')}:{' '}
                             {t('subscription.days', { count: customDays })}
                           </span>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 whitespace-nowrap">
                             <span>{formatPrice(promoPeriod.price)}</span>
                             {promoPeriod.original && promoPeriod.original > promoPeriod.price && (
                               <span className="text-xs text-dark-500 line-through">
@@ -661,7 +765,7 @@ export function TariffPurchaseForm({
                             {(selectedTariffPeriod.extra_devices_count ?? 0) > 0 &&
                             selectedTariffPeriod.base_tariff_price_kopeks ? (
                               <>
-                                <div className="flex justify-between text-sm text-dark-300">
+                                <div className="flex flex-wrap justify-between gap-x-3 text-sm text-dark-300">
                                   <span>
                                     {t('subscription.baseTariff')}: {selectedTariffPeriod.label}
                                   </span>
@@ -669,7 +773,7 @@ export function TariffPurchaseForm({
                                     {formatPrice(selectedTariffPeriod.base_tariff_price_kopeks)}
                                   </span>
                                 </div>
-                                <div className="flex justify-between text-sm text-dark-300">
+                                <div className="flex flex-wrap justify-between gap-x-3 text-sm text-dark-300">
                                   <span>
                                     {t('subscription.extraDevices')} (
                                     {selectedTariffPeriod.extra_devices_count})
@@ -683,13 +787,13 @@ export function TariffPurchaseForm({
                                 </div>
                               </>
                             ) : (
-                              <div className="flex justify-between text-sm text-dark-300">
+                              <div className="flex flex-wrap justify-between gap-x-3 text-sm text-dark-300">
                                 <span>
                                   {t('subscription.summary.period', {
                                     label: selectedTariffPeriod.label,
                                   })}
                                 </span>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 whitespace-nowrap">
                                   <span>{formatPrice(promoPeriod.price)}</span>
                                   {promoPeriod.original &&
                                     promoPeriod.original > promoPeriod.price && (
@@ -704,7 +808,7 @@ export function TariffPurchaseForm({
                         )
                       )}
                       {useCustomTraffic && tariff.custom_traffic_enabled && (
-                        <div className="flex justify-between text-sm text-dark-300">
+                        <div className="flex flex-wrap justify-between gap-x-3 text-sm text-dark-300">
                           <span>{t('subscription.summary.traffic', { gb: customTrafficGb })}</span>
                           <span>+{formatPrice(trafficPrice)}</span>
                         </div>
@@ -719,10 +823,10 @@ export function TariffPurchaseForm({
                       </div>
                     )}
 
-                    <div className="mb-4 flex items-center justify-between border-t border-dark-700/50 pt-2">
+                    <div className="mb-4 flex items-center justify-between gap-3 border-t border-dark-700/50 pt-2">
                       <span className="font-medium text-dark-100">{t('subscription.total')}</span>
                       <div className="text-right">
-                        <span className="text-2xl font-bold text-accent-400">
+                        <span className="whitespace-nowrap text-2xl font-bold text-accent-400">
                           {formatPrice(totalPrice)}
                         </span>
                         {originalTotal && (
@@ -750,6 +854,7 @@ export function TariffPurchaseForm({
 
                     {sbpPurchaseButton}
                     {lavaPurchaseButton}
+                    {casheraPurchaseButton}
                   </>
                 );
               })()}

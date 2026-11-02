@@ -8,7 +8,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import DOMPurify from 'dompurify';
 import { landingApi } from '../api/landings';
 import { pickBestValue } from '../utils/bestValue';
+<<<<<<< HEAD
 import { BestValueBadge } from '../components/subscription/BestValueBadge';
+=======
+import { BestValueBadge, bestValueFrame } from '../components/subscription/BestValueBadge';
+>>>>>>> upstream/main
 import type {
   LandingConfig,
   LandingTariff,
@@ -20,7 +24,13 @@ import {
   BackgroundRenderer,
   StaticBackgroundRenderer,
 } from '../components/backgrounds/BackgroundRenderer';
-import { CheckCircleIcon, CheckIcon, DevicesIcon, DownloadIcon } from '@/components/icons';
+import {
+  CheckCircleIcon,
+  CheckIcon,
+  DevicesIcon,
+  DownloadIcon,
+  WarningCircleIcon,
+} from '@/components/icons';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { cn } from '../lib/utils';
 import { getApiErrorMessage } from '../utils/api-error';
@@ -77,19 +87,7 @@ function ErrorState({ message }: { message: string }) {
     <div className="flex min-h-dvh items-center justify-center bg-dark-950 px-4">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-error-500/10">
-          <svg
-            className="h-8 w-8 text-error-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.5}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-            />
-          </svg>
+          <WarningCircleIcon className="h-8 w-8 text-error-400" />
         </div>
         <h2 className="text-lg font-semibold text-dark-50">{t('landing.error', 'Error')}</h2>
         <p className="text-sm text-dark-300">{message}</p>
@@ -274,13 +272,19 @@ function TariffCard({
       aria-checked={isSelected}
       onClick={onSelect}
       className={cn(
-        'relative flex w-full flex-col rounded-2xl border p-5 text-start transition-all duration-200',
-        isSelected
-          ? 'border-accent-500/50 bg-accent-500/5 ring-1 ring-accent-500/25'
-          : 'border-dark-800/50 bg-dark-900/50 hover:border-dark-700/50 hover:bg-dark-800/30',
+        'relative flex w-full flex-col rounded-2xl p-5 text-start transition-all duration-200',
+        tariff.is_highlighted
+          ? cn(bestValueFrame(isSelected), isSelected ? 'bg-accent-500/5' : 'bg-dark-900/50')
+          : isSelected
+            ? 'border border-accent-500/50 bg-accent-500/5 ring-1 ring-accent-500/25'
+            : 'border border-dark-800/50 bg-dark-900/50 hover:border-dark-700/50 hover:bg-dark-800/30',
       )}
     >
+      {/* Отметка оператора первой строкой, как в покупке и продлении: этот тариф
+          выбран сразу — подпись объясняет почему. */}
+      {tariff.is_highlighted && <BestValueBadge className="mb-3 self-start" />}
       {/* Header */}
+<<<<<<< HEAD
       <div className="mb-3 flex items-start justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -288,6 +292,11 @@ function TariffCard({
             {/* Отметка оператора: этот тариф выбран сразу — подпись объясняет почему. */}
             {tariff.is_highlighted && <BestValueBadge />}
           </div>
+=======
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-dark-50">{tariff.name}</h3>
+>>>>>>> upstream/main
           {tariff.description && (
             <p className="mt-0.5 text-xs text-dark-400">{tariff.description}</p>
           )}
