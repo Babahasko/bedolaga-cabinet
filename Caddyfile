@@ -1,0 +1,28 @@
+otec.yozatune.site {
+        reverse_proxy remnawave_bot:8080
+}
+
+https://cabinet.example.com {
+    encode gzip zstd
+
+    # API запросы → backend бота (удаляет /api префикс)
+    handle /api/* {
+        uri strip_prefix /api
+        reverse_proxy remnawave_bot:8080
+    }
+
+    # Frontend статика
+    handle {
+        root * /srv/cabinet
+        try_files {path} /index.html
+        file_server
+
+        # Кэширование статических ассетов (JS, CSS, шрифты, изображения)
+        @static path *.js *.css *.woff *.woff2 *.ttf *.ico *.png *.jpg *.jpeg *.svg *.webp *.gif
+        header @static Cache-Control "public, max-age=31536000, immutable"
+
+        # HTML без кэша (для обновлений SPA)
+        @html path *.html /
+        header @html Cache-Control "no-cache, must-revalidate"
+    }
+}

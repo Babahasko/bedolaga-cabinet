@@ -1,0 +1,24 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: remnawave_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+      - /srv/cabinet:/srv/cabinet:ro
+    networks:
+      - bot_network
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  bot_network:
+    name: remnawave-bedolaga-telegram-bot_bot_network
+    external: true
